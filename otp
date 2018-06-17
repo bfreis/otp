@@ -122,14 +122,17 @@ function run_test_hotp() {
   for test_case in ${test_cases[@]}; do
     cnt=$(echo $test_case      | cut -d \: -f 1)
     expected=$(echo $test_case | cut -d \: -f 2)
+
     actual=$(hotp "$key" "$cnt")
+
     if [[ "$expected" == "$actual" ]]; then
       printf '[\e[1;32mPASS\e[0m]'
     else
       printf '[\e[1;31mFAIL\e[0m]'
       ((errors++))
     fi
-    printf ' hotp(%s, %s) = \e[1;33m%s\e[0m == \e[1;34m%s\e[0m\n' "$key" "$cnt" "$actual" "$expected"
+
+    printf ' hotp(%s, %s) = \e[1m%s\e[0m == \e[1m%s\e[0m\n' "$key" "$cnt" "$actual" "$expected"
   done
 
   return $errors
@@ -169,15 +172,16 @@ function run_test_totp() {
   local errors=0
 
   for test_case in ${test_cases[@]}; do
-    dt_str=$(echo $test_case       | cut -d \; -f 1)
-    dt=$(date --date="$dt_str" +%s)
+    dt_str=$(echo $test_case   | cut -d \; -f 1)
     alg=$(echo $test_case      | cut -d \; -f 2)
+    expected=$(echo $test_case | cut -d \; -f 3)
+
+    dt=$(date --date="$dt_str" +%s)
     case "$alg" in
       sha1) key=$key_1 ;;
       sha256) key=$key_256 ;;
       sha512) key=$key_512 ;;
     esac
-    expected=$(echo $test_case | cut -d \; -f 3)
     actual=$(totp "$key" "$dt" "30" "8" "$alg")
 
     if [[ "$expected" == "$actual" ]]; then
@@ -186,7 +190,7 @@ function run_test_totp() {
       printf '[\e[1;31mFAIL\e[0m]'
       ((errors++))
     fi
-    printf ' totp(%s, %s) = \e[1;33m%s\e[0m == \e[1;34m%s\e[0m\n' "$key" "$dt" "$actual" "$expected"
+    printf ' totp(%s, %s) = \e[1m%s\e[0m == \e[1m%s\e[0m\n' "$key" "$dt" "$actual" "$expected"
   done
 
   return $errors
@@ -198,6 +202,12 @@ run_test_hotp
 failed_tests=$(($failed_tests + $?))
 run_test_totp
 failed_tests=$(($failed_tests + $?))
+
+if [[ $failed_tests == 0 ]]; then
+  printf '\n\e[1;32mAll tests successful!\e[0m\n\n'
+else
+  printf '\n\e[1;31mFailed tests: %d.\nPlease open an issue at: https://github.com/bfreis/otp\e[0m\n\n' "$failed_tests"
+fi
 
 exit $failed_tests
 
