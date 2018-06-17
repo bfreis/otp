@@ -78,7 +78,7 @@ function hotp() {
   local cnt_hex_string=$(printf "%016X" "$counter")
   local digest=$(hmac "$key" "$cnt_hex_string" "$alg")
   local number=$(dynamic_truncate "$digest" "$digits")
-  printf "%0${digits}s" "$number"
+  printf "%0${digits}d" "$number"
 }
 
 # totp <key> [datetime:now] [duration:30] [digits:6] [alg:sha1]
