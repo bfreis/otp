@@ -81,13 +81,13 @@ function hotp() {
   printf "%0${digits}d" "$number"
 }
 
-# totp <key> [datetime:now] [duration:30] [digits:6] [alg:sha1]
+# totp <key> [datetime:now] [period:30] [digits:6] [alg:sha1]
 # - key: hex encoded key
 # - datetime: unix epoch (seconds)
 function totp() {
   local key=$1
   local datetime="$2"
-  local duration=${3:-30}
+  local period=${3:-30}
   local digits=${4:-6}
   local alg=${5:-sha1}
 
@@ -95,19 +95,15 @@ function totp() {
     datetime=$(date +%s)
   fi
 
-  local counter=$(($datetime / $duration))
+  local counter=$(($datetime / $period))
 
   hotp "$key" "$counter" "$digits" "$alg"
 }
 
-# current_period [duration:30]
-# - duration: in seconds
-function current_period() {
-  local duration=${1:-30}
-
-  echo $(( $(date +%s) / $duration))
+# epoch_now
+function epoch_now() {
+  date +%s
 }
-
 
 function run_test_hotp() {
   local secret=$(printf '12345678901234567890' | base32)
@@ -347,25 +343,23 @@ function main() {
     exit 1
   else
     # use params to generate otp
-
     local key code
     key=$(parse_secret "$secret")
 
     case "$mode" in
       hotp)
         code=$(hotp "$key" "$counter" "$digits" "$alg")
-        printf "%s\n" "$code"
-        exit 0
         ;;
       totp)
-        code=$(totp "$key" "$datetime" "$duration" "$digits" "$alg")
-        printf "%s\n" "$code"
-        exit 0
+        code=$(totp "$key" "$datetime" "$period" "$digits" "$alg")
         ;;
       *)
         help_quit "unknown mode: $mode"
         ;;
     esac
+
+    printf "%s\n" "$code"
+    exit 0
   fi
 
   help_quit "unknown error"
