@@ -196,19 +196,177 @@ function run_test_totp() {
   return $errors
 }
 
-failed_tests=0
 
-run_test_hotp
-failed_tests=$(($failed_tests + $?))
-run_test_totp
-failed_tests=$(($failed_tests + $?))
+function run_all_tests() {
+  failed_tests=0
 
-if [[ $failed_tests == 0 ]]; then
-  printf '\n\e[1;32mAll tests successful!\e[0m\n\n'
-else
-  printf '\n\e[1;31mFailed tests: %d.\nPlease open an issue at: https://github.com/bfreis/otp\e[0m\n\n' "$failed_tests"
-fi
+  run_test_hotp
+  failed_tests=$(($failed_tests + $?))
+  run_test_totp
+  failed_tests=$(($failed_tests + $?))
 
-exit $failed_tests
+  if [[ $failed_tests == 0 ]]; then
+    printf '\n\e[1;32mAll tests successful!\e[0m\n\n'
+  else
+    printf '\n\e[1;31mFailed tests: %d.\nPlease open an issue at: https://github.com/bfreis/otp\e[0m\n\n' "$failed_tests"
+  fi
+
+  exit $failed_tests
+}
+
+function usage() {
+  printf "One Time Password generation with Bash\n\n"
+  printf "Usage: ${0##*/} [options]\n"
+  printf "       ${0##*/}\n"
+  printf "\n"
+  printf "Options:\n"
+  printf "  -h, --help                    displays this help screen\n"
+  printf "  -s, --secret SECRET           (required) secret key to generate codes from\n"
+  printf "  -m, --mode MODE               selects operating mode\n"
+  printf "                                  possible options: totp, hotp\n"
+  printf "                                  default: totp\n"
+  printf "  -a, --alg ALG                 selects hashing algorithm\n"
+  printf "                                  possible options: sha1, sha256, sha512\n"
+  printf "                                  default: sha1\n"
+  printf "  -d, --digits DIGITS           selects the number of digits on displayed otp value\n"
+  printf "                                  default: 6\n"
+  printf "  -p, --period PERIOD           defines the period for TOTP mode\n"
+  printf "                                  default: 30\n"
+  printf "  -t, --time DATETIME           defines the date/time to calculate TOTP\n"
+  printf "                                  if not specified, uses 'now'\n"
+  printf "  -c, --counter COUNTER         counter for HOTP, required if HOTP\n"
+  printf "  -u, --uri URI                 OTP uri spec, see below\n"
+  printf "\n"
+  printf "\n"
+  printf "If --uri is specified, no other options are required. If both\n"
+  printf "this option and other options are specified, the behavior is undefined.\n"
+  printf "\n"
+  printf "If no options are specified, and input URI is read from STDIN.\n"
+  printf "\n"
+  printf "(c) 2018 Bruno Reis <bfreis@gmail.com>\n"
+  printf "Please submit bugs to: https://github.com/bfreis/otp\n"
+  exit ${1:-0}
+}
+
+function process_stdin() {
+  printf "ERROR: stdin processing not yet implemented\n"
+  exit 1
+}
+
+
+function help_quit() {
+  printf "%s\ntry ${0##*/} --help\n" "$1"
+  exit 1
+}
+
+function main() {
+  local uri secret counter datetime
+
+  local mode=totp
+  local alg=sha1
+  local digits=6
+  local period=30
+
+  local has_param has_uri
+
+  # if no args, then input is on stdin
+  if [[ $# -eq 0 ]]; then
+    process_stdin
+    exit 0
+  fi
+
+  # otherwise, parse args
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      -u|--uri)
+        uri=$2
+        shift 2
+        has_uri=1
+        ;;
+      -s|--secret)
+        secret=$2
+        shift 2
+        has_param=1
+        ;;
+      -m|--mode)
+        mode=$2
+        shift 2
+        has_param=1
+        ;;
+      -a|--alg)
+        alg=$2
+        shift 2
+        has_param=1
+        ;;
+      -d|--digits)
+        digits=$2
+        shift 2
+        has_param=1
+        ;;
+      -p|--period)
+        period=$2
+        shift 2
+        has_param=1
+        ;;
+      -t|--time)
+        printf "ERROR: --time not yet supported\n"
+        exit 1
+        #datetime=$2
+        #shift 2
+        #has_param=1
+        ;;
+      -c|--counter)
+        counter=$2
+        shift 2
+        has_param=1
+        ;;
+      --run-tests)
+        run_all_tests
+        ;;
+      -h|--help)
+        usage
+        ;;
+      *)
+        help_quit "unrecognized option: $1"
+        ;;
+    esac
+  done
+
+  # can't specify both URI and any other OTP config parameter
+  if [[ $has_param == 1 && $has_uri == 1 ]]; then
+    help_quit "cannot specify URI and any other OTP settings"
+  fi
+
+  if [[ "$uri" != "" ]]; then
+    # parse uri, generate otp
+    printf "ERROR: URI processing not yet implemented\n"
+    exit 1
+  else
+    # use params to generate otp
+
+    local key code
+    key=$(parse_secret "$secret")
+
+    case "$mode" in
+      hotp)
+        code=$(hotp "$key" "$counter" "$digits" "$alg")
+        printf "%s\n" "$code"
+        exit 0
+        ;;
+      totp)
+        code=$(totp "$key" "$datetime" "$duration" "$digits" "$alg")
+        printf "%s\n" "$code"
+        exit 0
+        ;;
+      *)
+        help_quit "unknown mode: $mode"
+        ;;
+    esac
+  fi
+
+  help_quit "unknown error"
+}
+
+main "$@"
 
 # vim: ft=sh
