@@ -16,11 +16,25 @@ After installing Homebrew or Linuxbrew, simply run:
 
     brew install coreutils openssl bash
 
-## Status and roadmap
+## Status
 
-Currently, this script simply implements the algorithms and passes all the test cases defined in the specifications.
+The algorithm implements HOTP and TOTP, with arbitrary number of digits, and supports multiple hashing algorithms. It passes all the tests from the specs, including sha1, sha256, and sha512 TOTPs.
 
-The goal is to allow the generation of HOTP and TOTP based on secret-specification parameters passed either through cmd line arguments or stdin.
+The script parses cmd line arguments, and generates HOTP and TOTP values according to the otp options specified. The script doesn't yet support arbitrary datetimes for TOTP - it just uses 'now'.
+
+To see what options are available, try:
+
+    ./otp --help
+
+## Roadmap
+
+- Implement processing of arbitrary datetimes for TOTP
+
+- Implement generating a few past and future TOTP codes (to help with sync)
+
+- Implement URI parsing
+
+- Implement STDIN processing
 
 The stdin use case is intended to allow easy integration with command-line based secret storage, such as https://www.passwordstore.org/, or https://github.com/lastpass/lastpass-cli.
 
