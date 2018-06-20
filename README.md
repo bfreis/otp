@@ -18,17 +18,15 @@ After installing Homebrew or Linuxbrew, simply run:
 
 ## Status
 
-The algorithm implements HOTP and TOTP, with arbitrary number of digits, and supports multiple hashing algorithms. It passes all the tests from the specs, including sha1, sha256, and sha512 TOTPs.
+The script implements HOTP and TOTP, with arbitrary number of digits, and supports multiple hashing algorithms. It passes all the tests from the specs, including sha1, sha256, and sha512 TOTPs.
 
-The script parses cmd line arguments, and generates HOTP and TOTP values according to the otp options specified. The script doesn't yet support arbitrary datetimes for TOTP - it just uses 'now'.
+The script parses cmd line arguments, and generates HOTP and TOTP values according to the otp options specified.
 
 To see what options are available, try:
 
     ./otp --help
 
 ## Roadmap
-
-- Implement processing of arbitrary datetimes for TOTP
 
 - Implement generating a few past and future TOTP codes (to help with sync)
 
