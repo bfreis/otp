@@ -17,6 +17,30 @@ function d() {
   printf "%-10s[\e[32m%s\e[0m]\n" "$msg" "$data" >&2
 }
 
+# parse_datetime <datetime>
+# - datetime: unix epoch or iso-8601 formatted string
+function parse_datetime() {
+  local dt_str="$1"
+  local dt
+
+  # try to parse epoch
+  dt=$(date +%s --date="@$dt_str" 2>/dev/null)
+  if [[ $? == 0 ]]; then
+    printf "$dt"
+    return 0
+  fi
+
+  # try to parse iso
+  dt=$(date +%s --date="$dt_str" 2>/dev/null)
+  if [[ $? == 0 ]]; then
+    printf "$dt"
+    return 0
+  fi
+
+  return 1
+}
+
+
 # parse_secret <secret>
 # - secret: base32 encoded;
 #           may contain spaces;
@@ -214,8 +238,13 @@ function usage() {
   printf "One Time Password generation with Bash\n\n"
   printf "Usage: ${0##*/} [options]\n"
   printf "\n"
-  printf "Options:\n"
+  printf "General options:\n"
   printf "  -h, --help                    displays this help screen\n"
+  printf "  -t, --time DATETIME           generate a code for the specified instance\n"
+  printf "                                  default: the current timestamp\n"
+  printf "      --run-tests               runs all the htop and totp specs tests\n"
+  printf "\n"
+  printf "OTP options:\n"
   printf "  -s, --secret SECRET           (required) secret key to generate codes from\n"
   printf "  -m, --mode MODE               selects operating mode\n"
   printf "                                  possible options: totp, hotp\n"
@@ -227,21 +256,20 @@ function usage() {
   printf "                                  default: 6\n"
   printf "  -p, --period PERIOD           defines the period for TOTP mode\n"
   printf "                                  default: 30\n"
-  printf "  -t, --time DATETIME           defines the date/time to calculate TOTP\n"
-  printf "                                  if not specified, uses 'now'\n"
   printf "  -c, --counter COUNTER         counter for HOTP, required if HOTP\n"
   printf "  -u, --uri URI                 OTP uri spec, see below\n"
   printf "\n"
-  printf "\n"
-  printf "To test the implementation of the HOTP and TOTP algorithms in your\n"
-  printf "machine, use the following option:\n"
-  printf "  --run-tests                   runs all hotp and totp tests\n"
   printf "\n"
   printf "If --uri is specified, no other otp settigns are allowed. If both\n"
   printf "the URI and other otp settings are specified, the behavior is undefined\n"
   printf "and the application might generate invalid codes or crash.\n"
   printf "\n"
-  printf "If no options are specified, and input URI is read from STDIN.\n"
+  printf "If the --time option is specificed, the format should be a Unix Epoch (seconds) or\n"
+  printf "alternatively an ISO-8601 formatted timstamp. Examples:\n"
+  printf "  --time 1136239445\n" # what's the significance of this instant?
+  printf "  --time \"2006-01-02T15:04:05-07:00\"\n"
+  printf "\n"
+  printf "If no options are specified, an input URI is read from STDIN.\n"
   printf "\n"
   printf "(c) 2018 Bruno Reis <bfreis@gmail.com>\n"
   printf "Please submit bugs to: https://github.com/bfreis/otp\n"
@@ -260,8 +288,9 @@ function help_quit() {
 }
 
 function main() {
-  local uri secret counter datetime
+  local uri secret counter dt_str
 
+  local datetime
   local mode=totp
   local alg=sha1
   local digits=6
@@ -309,11 +338,8 @@ function main() {
         has_param=1
         ;;
       -t|--time)
-        printf "ERROR: --time not yet supported\n"
-        exit 1
-        #datetime=$2
-        #shift 2
-        #has_param=1
+        dt_str=$2
+        shift 2
         ;;
       -c|--counter)
         counter=$2
@@ -336,6 +362,16 @@ function main() {
   if [[ $has_param == 1 && $has_uri == 1 ]]; then
     help_quit "cannot specify URI and any other OTP settings"
   fi
+
+  if [[ $dt_str == "" ]]; then
+    datetime=$(date +%s)
+  else
+    datetime=$(parse_datetime "$dt_str")
+    if [[ $? != 0 ]]; then
+      help_quit "invalid datetime specification: $dt_str"
+    fi
+  fi
+  printf "parsed: %s\n" "$datetime"
 
   if [[ "$uri" != "" ]]; then
     # parse uri, generate otp
