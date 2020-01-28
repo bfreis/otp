@@ -374,7 +374,7 @@ function main() {
       help_quit "invalid datetime specification: $dt_str"
     fi
   fi
-  printf "parsed: %s\n" "$datetime"
+  #printf "parsed: %s\n" "$datetime"
 
   if [[ "$uri" != "" ]]; then
     # parse uri, generate otp
